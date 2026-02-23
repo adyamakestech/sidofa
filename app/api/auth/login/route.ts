@@ -1,0 +1,83 @@
+import { NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { verifyPassword } from "@/lib/password";
+import { signAccessToken, signRefreshToken } from "@/lib/auth";
+import { loginLimiter } from "@/lib/rate-limit";
+import { headers } from "next/headers";
+
+export async function POST(req: Request) {
+  try {
+    const { email, password } = await req.json();
+
+    const ip = (await headers()).get("x-forwarded-for") ?? "127.0.0.1";
+
+    const { success } = await loginLimiter.limit(`login:${ip}:${email}`);
+
+    if (!success) {
+      return NextResponse.json(
+        { error: "Too many attempts. Try later." },
+        { status: 429 },
+      );
+    }
+
+    const result = await db.query(`SELECT * FROM users WHERE email=$1`, [
+      email,
+    ]);
+
+    const user = result.rows[0];
+
+    if (user.status !== "active") {
+      return NextResponse.json(
+        { error: "Email not verified" },
+        { status: 403 },
+      );
+    }
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "Invalid credentials" },
+        { status: 401 },
+      );
+    }
+
+    const valid = await verifyPassword(password, user.password);
+
+    if (!valid) {
+      return NextResponse.json(
+        { error: "Invalid credentials" },
+        { status: 401 },
+      );
+    }
+
+    const accessToken = signAccessToken({
+      id: user.id,
+      role: user.role,
+    });
+
+    const refreshToken = signRefreshToken({
+      id: user.id,
+    });
+
+    const res = NextResponse.json({ success: true });
+
+    res.cookies.set("access_token", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+      maxAge: 60 * 15, // 15 menit
+    });
+
+    res.cookies.set("refresh_token", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7, // 7 hari
+    });
+
+    return res;
+  } catch {
+    return NextResponse.json({ error: "Login failed" }, { status: 500 });
+  }
+}
