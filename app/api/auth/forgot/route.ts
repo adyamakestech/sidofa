@@ -8,7 +8,17 @@ import { headers } from "next/headers";
 
 export async function POST(req: Request) {
   const { email } = await req.json();
-  const ip = (await headers()).get("x-forwarded-for") ?? "127.0.0.1";
+
+  if (!email) {
+    return NextResponse.json({ error: "Email wajib diisi" }, { status: 400 });
+  }
+
+  const headersList = await headers();
+
+  const ip =
+    headersList.get("x-forwarded-for") ||
+    headersList.get("x-real-ip") ||
+    "127.0.0.1";
 
   const { success } = await forgotLimiter.limit(`forgot:${ip}:${email}`);
 
@@ -44,5 +54,13 @@ export async function POST(req: Request) {
     html: resetPasswordTemplate(user.rows[0].name, link),
   });
 
-  return NextResponse.json({ success: true });
+  const res = NextResponse.json({ success: true });
+
+  res.cookies.set("forgot_flow", "1", {
+    maxAge: 60,
+    httpOnly: true,
+    path: "/",
+  });
+
+  return res;
 }

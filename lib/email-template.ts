@@ -1,5 +1,3 @@
-// src/lib/email-template.ts
-
 export function verifyEmailTemplate(name: string, link: string) {
   return `
   <div style="font-family:sans-serif">

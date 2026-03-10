@@ -1,27 +1,24 @@
 @import "tailwindcss";
 
-/* ============ SIDOFA DESIGN SYSTEM ============ */
-
 :root {
-  /* Backgrounds */
-  --bg-main: #020617;
-  --bg-elevated: #020a1a;
-  --bg-card: rgba(255, 255, 255, 0.04);
-
-  /* Borders */
-  --border-soft: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.14);
-
-  /* Text */
-  --text-primary: #f8fafc;
-  --text-secondary: #cbd5e1;
-  --text-muted: #94a3b8;
-
-  /* Brand */
-  --brand-primary: #22c55e; /* emerald */
-  --brand-accent: #38bdf8; /* sky */
-
-  /* Status */
-  --danger: #ef4444;
-  --success: #22c55e;
+  --color-primary: #3b9eda;
+  --color-primary-hover: #1e7ab8;
+  --color-primary-light: #c6e4f5;
+  --color-primary-subtle: #e8f4fb;
+  --color-bg: #f0f8fd;
+  --color-surface: #ffffff;
+  --color-border: #d0e8f5;
+  --color-text: #1a2a3a;
+  --color-text-muted: #6e8fa8;
+  --color-text-placeholder: #aac8de;
+  --color-soft-red: #f5a3a3;
+  --color-soft-yellow: #ffe3a3;
+  --color-soft-blue: #9fc5f8;
+  --color-soft-green: #9ed8c2;
+  --color-soft-purple: #c4b5f4;
+  --color-soft-orange: #ffc8a3;
+  --color-soft-pink: #f9c0d8;
+  --color-soft-teal: #a3dde0;
+  --color-surface-2: #f7fbfe;
+  --color-border-subtle: #e8f4fb;
 }

@@ -1,10 +1,10 @@
 import AuthLayout from "@/components/auth/AuthLayout";
-import ResetModule from "@/modules/auth/ResetModule";
+import RegisterModule from "@/modules/auth/RegisterModule";
 
 export default function Page() {
   return (
     <AuthLayout>
-      <ResetModule />
+      <RegisterModule />
     </AuthLayout>
   );
 }

@@ -1,0 +1,5 @@
+body {
+  background: linear-gradient(175deg, #ffffff 0%, #eaf5fc 55%, #d4ecf7 100%);
+  min-height: 100vh;
+  color: var(--color-text);
+}

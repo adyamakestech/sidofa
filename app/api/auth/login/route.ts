@@ -26,13 +26,6 @@ export async function POST(req: Request) {
 
     const user = result.rows[0];
 
-    if (user.status !== "active") {
-      return NextResponse.json(
-        { error: "Email not verified" },
-        { status: 403 },
-      );
-    }
-
     if (!user) {
       return NextResponse.json(
         { error: "Invalid credentials" },
@@ -40,13 +33,17 @@ export async function POST(req: Request) {
       );
     }
 
+    if (user.status !== "active") {
+      return NextResponse.json(
+        { error: "Email not verified" },
+        { status: 403 },
+      );
+    }
+
     const valid = await verifyPassword(password, user.password);
 
     if (!valid) {
-      return NextResponse.json(
-        { error: "Invalid credentials" },
-        { status: 401 },
-      );
+      return NextResponse.json({ error: "Invalid Password" }, { status: 401 });
     }
 
     const accessToken = signAccessToken({
@@ -54,18 +51,30 @@ export async function POST(req: Request) {
       role: user.role,
     });
 
-    const refreshToken = signRefreshToken({
-      id: user.id,
-    });
+    const refreshToken = signRefreshToken({ id: user.id });
+
+    await db.query(
+      `
+      UPDATE users 
+      SET 
+        refresh_token=$1,
+        last_login=NOW(),
+        updated_at=NOW()
+      WHERE id=$2
+      `,
+      [refreshToken, user.id],
+    );
 
     const res = NextResponse.json({ success: true });
 
+    const isProd = process.env.NODE_ENV === "production";
+
     res.cookies.set("access_token", accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: isProd,
+      sameSite: isProd ? "strict" : "lax",
       path: "/",
-      maxAge: 60 * 15, // 15 menit
+      maxAge: 60 * 15,
     });
 
     res.cookies.set("refresh_token", refreshToken, {
@@ -73,7 +82,7 @@ export async function POST(req: Request) {
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       path: "/",
-      maxAge: 60 * 60 * 24 * 7, // 7 hari
+      maxAge: 60 * 60 * 24 * 7,
     });
 
     return res;

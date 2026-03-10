@@ -6,8 +6,11 @@ import crypto from "crypto";
 export async function POST(req: Request) {
   const { token, password } = await req.json();
 
-  const hashedPassword = await hashPassword(password);
+  if (!token || !password) {
+    return NextResponse.json({ error: "Invalid input" }, { status: 400 });
+  }
 
+  const hashedPassword = await hashPassword(password);
   const hash = crypto.createHash("sha256").update(token).digest("hex");
 
   const result = await db.query(
@@ -15,7 +18,9 @@ export async function POST(req: Request) {
     UPDATE users
     SET password=$1,
         reset_token=NULL,
-        reset_expires=NULL
+        reset_expires=NULL,
+        refresh_token=NULL,
+        updated_at=NOW()
     WHERE reset_token=$2
       AND reset_expires > now()
     `,
@@ -23,7 +28,10 @@ export async function POST(req: Request) {
   );
 
   if (!result.rowCount) {
-    return NextResponse.json({ error: "Invalid token" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid or expired token" },
+      { status: 400 },
+    );
   }
 
   return NextResponse.json({ success: true });

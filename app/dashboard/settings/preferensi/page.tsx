@@ -1,10 +1,10 @@
 import AdminLayout from "@/components/admin/AdminLayout";
-import DashboardModule from "@/modules/admin/DashboardModule";
+import PreferensiModule from "@/modules/admin/settings/preferensi/PreferensiModule";
 
 export default function Page() {
   return (
     <AdminLayout>
-      <DashboardModule />
+      <PreferensiModule />
     </AdminLayout>
   );
 }

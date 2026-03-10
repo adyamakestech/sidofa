@@ -12,18 +12,29 @@ export async function POST(req: Request) {
     const { name, email, password } = await req.json();
 
     const ip = (await headers()).get("x-forwarded-for") ?? "127.0.0.1";
-
     const { success } = await registerLimiter.limit(`register:${ip}:${email}`);
 
     if (!success) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
+
     if (!name || !email || !password) {
       return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     }
 
-    const hashedPassword = await hashPassword(password);
+    // 🔥 Check duplicate email
+    const existing = await db.query("SELECT id FROM users WHERE email=$1", [
+      email,
+    ]);
 
+    if (existing.rowCount) {
+      return NextResponse.json(
+        { error: "Email already registered" },
+        { status: 400 },
+      );
+    }
+
+    const hashedPassword = await hashPassword(password);
     const { raw, hash } = generateToken();
 
     await db.query(
@@ -46,7 +57,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error(err);
-
     return NextResponse.json({ error: "Register failed" }, { status: 500 });
   }
 }

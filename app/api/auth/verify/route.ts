@@ -18,7 +18,8 @@ export async function GET(req: Request) {
     UPDATE users
     SET status='active',
         verify_token=NULL,
-        verify_expires=NULL
+        verify_expires=NULL,
+        updated_at=NOW()
     WHERE verify_token=$1
       AND verify_expires > now()
     `,
