@@ -3,48 +3,58 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { Eye, EyeOff, Lock, Mail, TrendingUp, Check } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, TrendingUp } from "lucide-react";
+import { useLoading } from "@/context/LoadingContext";
+import { withLoading } from "@/lib/with-loading";
+import { toastFail, toastInfo } from "@/components/Toast";
+
+import Link from "next/link";
 
 export default function LoginModule() {
   const router = useRouter();
+  const { loading, startLoading, stopLoading } = useLoading();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const [showPassword, setShowPassword] = useState(false);
 
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-
   async function submit(e: React.FormEvent) {
     e.preventDefault();
 
-    setLoading(true);
-    setError("");
+    if (loading) return;
 
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    await withLoading(
+      async () => {
+        try {
+          const res = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify({ email, password }),
+          });
+
+          const data = await res.json().catch(() => null);
+
+          if (!res.ok) {
+            toastFail(data?.error || "Gagal masuk ke akun");
+            return;
+          }
+
+          toastInfo("Login berhasil");
+          router.replace("/dashboard");
+        } catch {
+          toastFail("Terjadi kesalahan jaringan");
+        }
       },
-      credentials: "include",
-      body: JSON.stringify({ email, password }),
-    });
-
-    const data = await res.json();
-
-    setLoading(false);
-
-    if (!res.ok) {
-      setError(data?.error || "Gagal masuk ke akun");
-      return;
-    }
-
-    setSuccess(true);
-    setTimeout(() => {
-      router.push("/dashboard");
-    }, 300);
+      {
+        startLoading,
+        stopLoading,
+        minDuration: 600,
+      },
+    );
   }
 
   return (
@@ -70,13 +80,6 @@ export default function LoginModule() {
           Kelola keuanganmu dengan mudah dan aman.
         </p>
       </div>
-
-      {/* Alert */}
-      {error && (
-        <div className="fade-up d2 mb-4 rounded-lg border border-[var(--color-soft-red)] bg-[var(--color-soft-red)]/10 px-3 py-2 text-sm text-[var(--color-soft-red)]">
-          {error}
-        </div>
-      )}
 
       {/* Form */}
       <form onSubmit={submit} className="space-y-3.5">
@@ -109,12 +112,12 @@ export default function LoginModule() {
               Kata Sandi
             </label>
 
-            <a
-              href="/forgot"
+            <Link
+              href="/auth/forgot"
               className="text-xs font-medium text-[var(--color-primary)] hover:text-[var(--color-primary-hover)]"
             >
               Lupa kata sandi?
-            </a>
+            </Link>
           </div>
 
           <div className="input-wrap relative">
@@ -149,19 +152,14 @@ export default function LoginModule() {
         <div className="fade-up d5 pt-1">
           <button
             type="submit"
-            disabled={loading || success}
-            className="btn-primary flex items-center justify-center gap-2 disabled:opacity-60"
+            disabled={loading}
+            className="btn btn-primary w-full py-2.5 text-sm flex items-center justify-center gap-2"
           >
-            {success ? (
-              <>
-                <Check className="w-4 h-4" />
-                Berhasil
-              </>
-            ) : loading ? (
-              "Memproses..."
-            ) : (
-              "Masuk"
+            {loading && (
+              <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
             )}
+
+            {loading ? "Memproses..." : "Masuk"}
           </button>
         </div>
       </form>
@@ -169,12 +167,12 @@ export default function LoginModule() {
       {/* Footer */}
       <p className="fade-up d6 text-center text-sm mt-7 text-[var(--color-text-muted)]">
         Belum punya akun?
-        <a
-          href="/register"
+        <Link
+          href="/auth/register"
           className="font-semibold ml-1 text-[var(--color-primary)] hover:text-[var(--color-primary-hover)]"
         >
           Daftar gratis
-        </a>
+        </Link>
       </p>
     </div>
   );

@@ -3,18 +3,21 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { Mail, TrendingUp, Check, ArrowLeft } from "lucide-react";
+import { Mail, TrendingUp, ArrowLeft } from "lucide-react";
+
+import { useLoading } from "@/context/LoadingContext";
+import { withLoading } from "@/lib/with-loading";
+
+import { toastFail, toastInfo } from "@/components/Toast";
+
+import Link from "next/link";
 
 export default function ForgotModule() {
   const router = useRouter();
+  const { loading, startLoading, stopLoading } = useLoading();
 
   const [email, setEmail] = useState("");
 
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-
-  // Simple email validation
   function isValidEmail(value: string) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
   }
@@ -22,38 +25,50 @@ export default function ForgotModule() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
 
+    if (loading) return;
+
     if (!isValidEmail(email)) {
-      setError("Format email tidak valid");
+      toastFail("Format email tidak valid");
       return;
     }
 
-    setLoading(true);
-    setError("");
+    await withLoading(
+      async () => {
+        try {
+          const res = await fetch("/api/auth/forgot", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ email }),
+          });
 
-    const res = await fetch("/api/auth/forgot", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+          const data = await res.json().catch(() => null);
+
+          if (!res.ok) {
+            toastFail(data?.error || "Gagal mengirim email reset");
+            return;
+          }
+
+          toastInfo("Tautan reset berhasil dikirim");
+
+          router.push("/auth/forgot/success");
+        } catch {
+          toastFail("Terjadi kesalahan jaringan");
+        }
       },
-      body: JSON.stringify({ email }),
-    });
-
-    const data = await res.json();
-
-    setLoading(false);
-
-    if (!res.ok) {
-      setError(data?.error || "Gagal mengirim email reset");
-      return;
-    }
-
-    setSuccess(true);
-    router.push("/forgot/success");
+      {
+        startLoading,
+        stopLoading,
+        minDuration: 600,
+      },
+    );
   }
 
   return (
     <div className="w-full max-w-[360px]">
       {/* Brand */}
+
       <div className="fade-up d1 flex items-center gap-2 mb-10">
         <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-[var(--color-primary)]">
           <TrendingUp size={16} className="text-white" strokeWidth={2.5} />
@@ -65,6 +80,7 @@ export default function ForgotModule() {
       </div>
 
       {/* Heading */}
+
       <div className="fade-up d2 mb-8">
         <h2 className="text-2xl font-bold mb-1 tracking-tight text-[var(--color-text)]">
           Lupa Kata Sandi
@@ -75,16 +91,11 @@ export default function ForgotModule() {
         </p>
       </div>
 
-      {/* Alert */}
-      {error && (
-        <div className="fade-up d2 mb-4 rounded-lg border border-[var(--color-soft-red)] bg-[var(--color-soft-red)]/10 px-3 py-2 text-sm text-[var(--color-soft-red)]">
-          {error}
-        </div>
-      )}
-
       {/* Form */}
+
       <form onSubmit={submit} className="space-y-3.5">
         {/* Email */}
+
         <div className="fade-up d3">
           <label className="block text-xs font-medium mb-1.5 text-[var(--color-text-muted)]">
             Email
@@ -111,31 +122,27 @@ export default function ForgotModule() {
           <button
             type="submit"
             disabled={loading}
-            className="btn-primary flex items-center justify-center gap-2 disabled:opacity-60"
+            className="btn btn-primary w-full py-2.5 text-sm flex items-center justify-center gap-2"
           >
-            {success ? (
-              <>
-                <Check className="w-4 h-4" />
-                Terkirim
-              </>
-            ) : loading ? (
-              "Mengirim..."
-            ) : (
-              "Kirim Tautan"
+            {loading && (
+              <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
             )}
+
+            {loading ? "Mengirim..." : "Kirim Tautan"}
           </button>
         </div>
       </form>
 
       {/* Footer */}
+
       <p className="fade-up d5 text-center text-sm mt-7 text-[var(--color-text-muted)]">
-        <a
-          href="/login"
+        <Link
+          href="/auth/login"
           className="inline-flex items-center gap-1 font-semibold text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Kembali ke Login
-        </a>
+        </Link>
       </p>
     </div>
   );

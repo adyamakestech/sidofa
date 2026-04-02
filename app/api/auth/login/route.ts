@@ -9,7 +9,9 @@ export async function POST(req: Request) {
   try {
     const { email, password } = await req.json();
 
-    const ip = (await headers()).get("x-forwarded-for") ?? "127.0.0.1";
+    const h = await headers();
+
+    const ip = h.get("x-forwarded-for") ?? h.get("x-real-ip") ?? "127.0.0.1";
 
     const { success } = await loginLimiter.limit(`login:${ip}:${email}`);
 
@@ -59,10 +61,12 @@ export async function POST(req: Request) {
       SET 
         refresh_token=$1,
         last_login=NOW(),
+        login_count=login_count + 1,
+        last_ip=$3,
         updated_at=NOW()
       WHERE id=$2
       `,
-      [refreshToken, user.id],
+      [refreshToken, user.id, ip],
     );
 
     const res = NextResponse.json({ success: true });
@@ -72,21 +76,23 @@ export async function POST(req: Request) {
     res.cookies.set("access_token", accessToken, {
       httpOnly: true,
       secure: isProd,
-      sameSite: isProd ? "strict" : "lax",
+      // sameSite: isProd ? "strict" : "lax",
+      sameSite: "strict",
       path: "/",
       maxAge: 60 * 15,
     });
 
     res.cookies.set("refresh_token", refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: isProd,
       sameSite: "strict",
       path: "/",
       maxAge: 60 * 60 * 24 * 7,
     });
 
     return res;
-  } catch {
+  } catch (err) {
+    console.error("LOGIN ERROR:", err);
     return NextResponse.json({ error: "Login failed" }, { status: 500 });
   }
 }

@@ -8,7 +8,7 @@ export async function GET(req: Request) {
   const token = searchParams.get("token");
 
   if (!token) {
-    return NextResponse.redirect("/login?error=invalid");
+    return NextResponse.redirect("/auth/login?error=invalid");
   }
 
   const hash = crypto.createHash("sha256").update(token).digest("hex");
@@ -27,8 +27,8 @@ export async function GET(req: Request) {
   );
 
   if (!result.rowCount) {
-    return NextResponse.redirect("/login?error=expired");
+    return NextResponse.redirect("/auth/login?error=expired");
   }
 
-  return NextResponse.redirect("/login?verified=1");
+  return NextResponse.redirect("/auth/login?verified=1");
 }

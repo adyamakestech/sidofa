@@ -28,7 +28,6 @@ export async function POST() {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
 
-    // 🔥 ROTATE TOKEN
     const newRefreshToken = signRefreshToken({ id: user.id });
     const newAccessToken = signAccessToken({
       id: user.id,

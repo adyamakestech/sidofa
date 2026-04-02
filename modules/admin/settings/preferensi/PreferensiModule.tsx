@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
 import AkunTab from "./tabs/AkunTab";
-import { useAuth } from "@/context/AuthContext";
 
 const TABS = [
   { id: "akun", label: "Akun" },
@@ -11,20 +10,25 @@ const TABS = [
   { id: "custom", label: "Custom Field" },
 ];
 export default function PreferensiModule() {
-  const { user } = useAuth();
   const [tab, setTab] = useState("akun");
 
   return (
     <div className="space-y-8">
       {/* HEADER */}
-      <div className="relative pl-4 pt-2 pb-4 border-b border-white/60">
+      <div className="relative pl-4 pt-2 pb-4 border-b border-white/60 flex items-start justify-between gap-4 min-h-[73px]">
         <div className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-[var(--color-primary)]" />
 
-        <h2 className="text-xl font-semibold leading-tight">Preferensi</h2>
+        {/* Title + description */}
+        <div className="flex flex-col">
+          <h2 className="text-xl font-semibold leading-tight">Preferensi</h2>
 
-        <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-          Kelola pengaturan akun dan bisnis Anda.
-        </p>
+          <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+            Kelola pengaturan akun dan bisnis Anda.
+          </p>
+        </div>
+
+        {/* Optional button */}
+        <div className="flex items-start">{/* button optional */}</div>
       </div>
 
       {/* TABS + CONTENT */}

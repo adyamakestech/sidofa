@@ -3,10 +3,18 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { Eye, EyeOff, Lock, Mail, User, TrendingUp, Check } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, User, TrendingUp } from "lucide-react";
+
+import { useLoading } from "@/context/LoadingContext";
+import { withLoading } from "@/lib/with-loading";
+
+import { toastFail, toastInfo } from "@/components/Toast";
+
+import Link from "next/link";
 
 export default function RegisterModule() {
   const router = useRouter();
+  const { loading, startLoading, stopLoading } = useLoading();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -19,11 +27,6 @@ export default function RegisterModule() {
 
   const [passwordStrength, setPasswordStrength] = useState(0);
 
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-
-  // Password strength
   function checkPasswordStrength(value: string) {
     let score = 0;
 
@@ -38,47 +41,59 @@ export default function RegisterModule() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
 
+    if (loading) return;
+
     if (password !== confirmPassword) {
-      setError("Konfirmasi kata sandi tidak cocok");
+      toastFail("Konfirmasi kata sandi tidak cocok");
       return;
     }
 
     if (passwordStrength < 2) {
-      setError("Kata sandi terlalu lemah");
+      toastFail("Kata sandi terlalu lemah");
       return;
     }
 
-    setLoading(true);
-    setError("");
+    await withLoading(
+      async () => {
+        try {
+          const res = await fetch("/api/auth/register", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              name,
+              email,
+              password,
+            }),
+          });
 
-    const res = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+          const data = await res.json().catch(() => null);
+
+          if (!res.ok) {
+            toastFail(data?.error || "Gagal mendaftar");
+            return;
+          }
+
+          toastInfo("Akun berhasil dibuat");
+
+          router.push("/auth/login");
+        } catch {
+          toastFail("Terjadi kesalahan jaringan");
+        }
       },
-      body: JSON.stringify({
-        name,
-        email,
-        password,
-      }),
-    });
-
-    const data = await res.json();
-
-    setLoading(false);
-
-    if (!res.ok) {
-      setError(data?.error || "Gagal mendaftar");
-      return;
-    }
-
-    setSuccess(true);
-    router.push("/login");
+      {
+        startLoading,
+        stopLoading,
+        minDuration: 600,
+      },
+    );
   }
 
   return (
     <div className="w-full max-w-[360px]">
       {/* Brand */}
+
       <div className="fade-up d1 flex items-center gap-2 mb-10">
         <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-[var(--color-primary)]">
           <TrendingUp size={16} className="text-white" strokeWidth={2.5} />
@@ -90,6 +105,7 @@ export default function RegisterModule() {
       </div>
 
       {/* Heading */}
+
       <div className="fade-up d2 mb-8">
         <h2 className="text-2xl font-bold mb-1 tracking-tight text-[var(--color-text)]">
           Daftar Akun Baru
@@ -100,16 +116,11 @@ export default function RegisterModule() {
         </p>
       </div>
 
-      {/* Alert */}
-      {error && (
-        <div className="fade-up d2 mb-4 rounded-lg border border-[var(--color-soft-red)] bg-[var(--color-soft-red)]/10 px-3 py-2 text-sm text-[var(--color-soft-red)]">
-          {error}
-        </div>
-      )}
-
       {/* Form */}
+
       <form onSubmit={submit} className="space-y-3.5">
         {/* Name */}
+
         <div className="fade-up d3">
           <label className="block text-xs font-medium mb-1.5 text-[var(--color-text-muted)]">
             Nama Lengkap
@@ -132,6 +143,7 @@ export default function RegisterModule() {
         </div>
 
         {/* Email */}
+
         <div className="fade-up d4">
           <label className="block text-xs font-medium mb-1.5 text-[var(--color-text-muted)]">
             Email
@@ -154,6 +166,7 @@ export default function RegisterModule() {
         </div>
 
         {/* Password */}
+
         <div className="fade-up d5">
           <label className="block text-xs font-medium mb-1.5 text-[var(--color-text-muted)]">
             Kata Sandi
@@ -191,6 +204,7 @@ export default function RegisterModule() {
           </div>
 
           {/* Strength */}
+
           <div className="mt-2">
             <div className="h-1.5 w-full bg-[var(--color-border)] rounded-full overflow-hidden">
               <div
@@ -209,6 +223,7 @@ export default function RegisterModule() {
         </div>
 
         {/* Confirm Password */}
+
         <div className="fade-up d6">
           <label className="block text-xs font-medium mb-1.5 text-[var(--color-text-muted)]">
             Konfirmasi Kata Sandi
@@ -240,44 +255,35 @@ export default function RegisterModule() {
               )}
             </button>
           </div>
-
-          {confirmPassword && password !== confirmPassword && (
-            <p className="text-xs mt-1 text-[var(--color-error)]">
-              Kata sandi tidak cocok
-            </p>
-          )}
         </div>
 
         {/* Button */}
+
         <div className="fade-up d7 pt-1">
           <button
             type="submit"
-            disabled={loading || success}
-            className="btn-primary flex items-center justify-center gap-2 disabled:opacity-60"
+            disabled={loading}
+            className="btn btn-primary w-full py-2.5 text-sm flex items-center justify-center gap-2"
           >
-            {success ? (
-              <>
-                <Check className="w-4 h-4" />
-                Berhasil
-              </>
-            ) : loading ? (
-              "Memproses..."
-            ) : (
-              "Daftar"
+            {loading && (
+              <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
             )}
+
+            {loading ? "Memproses..." : "Daftar"}
           </button>
         </div>
       </form>
 
       {/* Footer */}
+
       <p className="fade-up d8 text-center text-sm mt-7 text-[var(--color-text-muted)]">
         Sudah punya akun?
-        <a
-          href="/login"
+        <Link
+          href="/auth/login"
           className="font-semibold ml-1 text-[var(--color-primary)] hover:text-[var(--color-primary-hover)]"
         >
           Masuk
-        </a>
+        </Link>
       </p>
     </div>
   );

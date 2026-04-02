@@ -11,7 +11,6 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // ✅ Verify ACCESS token (bukan refresh)
     const payload: any = verifyAccessToken(token);
 
     const result = await db.query(
@@ -24,7 +23,8 @@ export async function GET() {
         role,
         avatar,
         last_login,
-        created_at
+        created_at,
+        password_updated_at
       FROM users
       WHERE id=$1
       `,
@@ -46,6 +46,7 @@ export async function GET() {
       avatar: user.avatar,
       lastLogin: user.last_login,
       createdAt: user.created_at,
+      passwordUpdatedAt: user.password_updated_at,
     });
   } catch (err: any) {
     if (err.name === "TokenExpiredError") {

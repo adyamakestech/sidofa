@@ -12,14 +12,12 @@ export async function POST() {
       try {
         const payload: any = verifyAccessToken(accessToken);
 
-        // 🔥 Revoke refresh token di DB
         await db.query(
           "UPDATE users SET refresh_token=NULL, updated_at=NOW() WHERE id=$1",
           [payload.id],
         );
       } catch (err) {
         console.error("Access token verification failed:", err);
-        // kalau access token invalid, tetap lanjut hapus cookie
       }
     }
 
@@ -27,7 +25,6 @@ export async function POST() {
 
     const isProd = process.env.NODE_ENV === "production";
 
-    // 🔥 Hapus cookies dengan aman
     res.cookies.set("access_token", "", {
       httpOnly: true,
       secure: isProd,

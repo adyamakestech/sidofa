@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     [hash, email],
   );
 
-  const link = `${process.env.APP_URL}/reset?token=${raw}`;
+  const link = `${process.env.APP_URL}/auth/reset?token=${raw}`;
 
   await sendEmail({
     to: email,
@@ -57,7 +57,7 @@ export async function POST(req: Request) {
   const res = NextResponse.json({ success: true });
 
   res.cookies.set("forgot_flow", "1", {
-    maxAge: 60,
+    maxAge: 30,
     httpOnly: true,
     path: "/",
   });

@@ -1,10 +1,5 @@
-import AdminLayout from "@/components/admin/AdminLayout";
 import DashboardModule from "@/modules/admin/DashboardModule";
 
 export default function Page() {
-  return (
-    <AdminLayout>
-      <DashboardModule />
-    </AdminLayout>
-  );
+  return <DashboardModule />;
 }

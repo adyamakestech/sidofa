@@ -22,7 +22,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     }
 
-    // 🔥 Check duplicate email
     const existing = await db.query("SELECT id FROM users WHERE email=$1", [
       email,
     ]);
